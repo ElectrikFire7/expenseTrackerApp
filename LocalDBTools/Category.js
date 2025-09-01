@@ -1,14 +1,17 @@
-import * as SQLite from 'expo-sqlite'
 import { getDB } from './SetUpDB'
 
-export async function addCategory(category, tagStrings) {
+export async function addCategory(category, tokens, account) {
     const db = await getDB()
     try {
-        await db.runAsync(
-            'INSERT INTO categoriesTable (Category, Tokens) VALUES (?, ?)',
-            [category, tagStrings]
+        const result = await db.runAsync(
+            'INSERT INTO categoriesTable (Category, Tokens, Account) VALUES (?, ?, ?)',
+            [category, tokens, account]
         )
-        return { success: true, message: 'Category created successfully' }
+        return {
+            success: true,
+            message: 'Category created successfully',
+            categoryID: result.lastInsertRowId,
+        }
     } catch (err) {
         if (err.message.includes('UNIQUE constraint failed')) {
             return { success: false, message: 'Category already exists' }
@@ -19,36 +22,31 @@ export async function addCategory(category, tagStrings) {
     }
 }
 
-export async function updateCategory(category, newTagStrings) {
+export async function deleteCategory(categoryID) {
     const db = await getDB()
     const result = await db.runAsync(
-        'UPDATE categoriesTable SET Tokens = ? WHERE Category = ?',
-        [newTagStrings, category]
+        'DELETE FROM categoriesTable WHERE CategoryID = ?',
+        [categoryID]
     )
 
     if (result.changes === 0) {
-        console.log(`Category '${category}' not found`)
+        return {
+            success: false,
+            message: `Category with ID '${categoryID}' not found`,
+        }
     } else {
-        console.log(`Category '${category}' updated`)
+        return {
+            success: true,
+            message: `Category with ID '${categoryID}' deleted`,
+        }
     }
 }
 
-export async function deleteCategory(category) {
+export async function getAllCategories(account) {
     const db = await getDB()
-    const result = await db.runAsync(
-        'DELETE FROM categoriesTable WHERE Category = ?',
-        [category]
+    const result = await db.getAllAsync(
+        'SELECT * FROM categoriesTable WHERE Account = ?',
+        [account]
     )
-
-    if (result.changes === 0) {
-        return { success: false, message: `Category '${category}' not found` }
-    } else {
-        return { success: true, message: `Category '${category}' deleted` }
-    }
-}
-
-export async function getAllCategories() {
-    const db = await getDB()
-    const result = await db.getAllAsync('SELECT * FROM categoriesTable')
     return result
 }

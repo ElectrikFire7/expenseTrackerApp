@@ -9,13 +9,19 @@ import {
 } from 'react-native'
 import { getTransactionsGivenCategory } from '../LocalDBTools/Tags'
 import { deleteCategory } from '../LocalDBTools/Category'
+import accountStore from '../Store/accountStore.js'
+import masterStyles from '../Styles/StylesMaster.js'
+import DeleteButton from '../Components/DeleteButton.js'
+import BackButton from '../Components/BackButton.js'
 
 const CategoryTransactions = ({ route, navigation }) => {
-    if (route?.params?.category == undefined) {
+    if (route?.params?.CategoryID == undefined) {
         navigation.navigate('Main', { screen: 'Categories' })
     }
-    const category = route.params.category
-    const tags = route.params.tagStrings.split(' ')
+    const category = route.params.Category
+    const tokens = route.params.Tokens.split(' ')
+    const categoryID = route.params.CategoryID
+    const account = accountStore.getState().currentAccount
     const [transactions, setTransactions] = useState([])
     const [credited, setCredited] = useState(0)
     const [debited, setDebited] = useState(0)
@@ -24,7 +30,10 @@ const CategoryTransactions = ({ route, navigation }) => {
 
     useEffect(() => {
         const fetchTransactions = async () => {
-            const allTransactions = await getTransactionsGivenCategory(category)
+            const allTransactions = await getTransactionsGivenCategory(
+                categoryID,
+                account
+            )
             setTransactions(allTransactions)
             const dc = allTransactions.reduce(
                 (acc, tx) => {
@@ -42,71 +51,29 @@ const CategoryTransactions = ({ route, navigation }) => {
     }, [category])
 
     return (
-        <View style={styles.screenContainer}>
-            <View style={styles.topBar}>
-                <TouchableOpacity
-                    onPress={() => {
+        <View style={masterStyles.screenContainer}>
+            <View style={masterStyles.headerBar}>
+                <BackButton
+                    onPressAction={() => {
                         navigation.navigate('Main', { screen: 'Categories' })
                     }}
-                    style={{
-                        backgroundColor: '#0061c9ad',
-                        paddingHorizontal: 10,
-                        paddingTop: 4,
-                        paddingBottom: 10,
-                        borderRadius: '50%',
-                        alignItems: 'center',
-                        marginHorizontal: 10,
-                    }}
-                >
-                    <Text
-                        style={{
-                            color: '#ffffff',
-                            fontWeight: 'bold',
-                            fontSize: 18,
-                        }}
-                    >
-                        ←
-                    </Text>
-                </TouchableOpacity>
-                <Text
-                    style={{ fontWeight: 'bold', fontSize: 18, paddingTop: 8 }}
-                >
-                    {category}
-                </Text>
-                <TouchableOpacity
-                    onPress={() => {
+                />
+                <Text style={masterStyles.header}>{category}</Text>
+                <DeleteButton
+                    onPressAction={() => {
                         setModalVisible(true)
                     }}
-                    style={{
-                        backgroundColor: '#f50000ad',
-                        paddingHorizontal: 8,
-                        paddingTop: 8,
-                        paddingBottom: 6,
-                        borderRadius: '50%',
-                        alignItems: 'center',
-                        marginHorizontal: 10,
-                    }}
-                    disabled={
+                    disable={
                         disableDelete ||
                         category.toLowerCase() === 'uncategorized'
                     }
-                >
-                    <Text
-                        style={{
-                            color: '#ffffff',
-                            fontWeight: 'bold',
-                            fontSize: 18,
-                        }}
-                    >
-                        🗑️
-                    </Text>
-                </TouchableOpacity>
+                />
             </View>
             {category.toLowerCase() !== 'uncategorized' && (
                 <View style={styles.tagsBar}>
-                    {tags.map((tag, index) => (
+                    {tokens.map((token, index) => (
                         <Text style={styles.tags} key={index}>
-                            {tag}
+                            {token}
                         </Text>
                     ))}
                 </View>
@@ -142,21 +109,14 @@ const CategoryTransactions = ({ route, navigation }) => {
                 onRequestClose={() => setModalVisible(false)}
                 transparent={true}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalHeader}>
+                <View style={masterStyles.modalContainer}>
+                    <View style={masterStyles.modalCard}>
+                        <Text style={masterStyles.modalHeader}>
                             Delete {category}?
                         </Text>
-                        <View style={styles.modalFooter}>
+                        <View style={masterStyles.modalFooter}>
                             <TouchableOpacity
-                                style={{
-                                    width: '50%',
-                                    backgroundColor: '#0061c9ad',
-                                    padding: 10,
-                                    borderRadius: 10,
-                                    alignItems: 'center',
-                                    marginHorizontal: 5,
-                                }}
+                                style={masterStyles.modalPositiveButton}
                                 onPress={() => {
                                     setModalVisible(false)
                                 }}
@@ -164,17 +124,10 @@ const CategoryTransactions = ({ route, navigation }) => {
                                 <Text>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={{
-                                    width: '50%',
-                                    backgroundColor: '#c90000ad',
-                                    padding: 10,
-                                    borderRadius: 10,
-                                    alignItems: 'center',
-                                    marginHorizontal: 5,
-                                }}
+                                style={masterStyles.modalNegativeButton}
                                 onPress={async () => {
                                     setDisableDelete(true)
-                                    await deleteCategory(category)
+                                    await deleteCategory(categoryID)
                                     setModalVisible(false)
                                     navigation.navigate('Main', {
                                         screen: 'Categories',
@@ -193,19 +146,6 @@ const CategoryTransactions = ({ route, navigation }) => {
 }
 
 const styles = StyleSheet.create({
-    screenContainer: {
-        flex: 1,
-        alignItems: 'center',
-        paddingTop: 60,
-        width: '100%',
-    },
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        paddingHorizontal: 10,
-        marginBottom: 10,
-    },
     tagsBar: {
         flexDirection: 'row',
         justifyContent: 'flex-start',
@@ -246,31 +186,6 @@ const styles = StyleSheet.create({
     transactionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    modalContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        flex: 1,
-    },
-    modalCard: {
-        backgroundColor: '#ffffff',
-        borderRadius: 10,
-        padding: 20,
-        width: '80%',
-        elevation: 5,
-        alignItems: 'center',
-        flexDirection: 'column',
-    },
-    modalHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 12,
-    },
-    modalFooter: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '80%',
     },
 })
 

@@ -1,12 +1,11 @@
-import * as SQLite from 'expo-sqlite'
 import { getDB } from './SetUpDB'
 
-export async function addTag(category, transactionString) {
+export async function addTag(categoryID, transactionID) {
     const db = await getDB()
     try {
         await db.runAsync(
-            'INSERT INTO tagsTable (Category, TransactionString) VALUES (?, ?)',
-            [category, transactionString]
+            'INSERT INTO tagsTable (CategoryID, TransactionID) VALUES (?, ?)',
+            [categoryID, transactionID]
         )
         return { success: true, message: 'Tag added successfully' }
     } catch (err) {
@@ -17,39 +16,48 @@ export async function addTag(category, transactionString) {
                     'Tag already exists for this category and transaction.',
             }
         }
-        console.error('Error adding tag:', err, transactionString, category)
+        console.error('Error adding tag:', err, transactionID, categoryID)
         return { success: false, message: `Error adding tag: ${err.message}` }
     }
 }
 
-export async function getTransactionsGivenCategory(category) {
+export async function getTransactionsGivenCategory(categoryID, account) {
     const db = await getDB()
-
-    if (category.toLowerCase() === 'uncategorized') {
+    if (categoryID.toString().toLowerCase() === 'uncategorized') {
         const result = await db.getAllAsync(
-            `SELECT * FROM transactionsTable WHERE TransactionString NOT IN (
-                SELECT TransactionString FROM tagsTable
-            )
-            ORDER BY Date DESC`
+            `
+            SELECT t.*
+            FROM transactionsTable t
+            LEFT JOIN tagsTable tg
+                ON t.TransactionID = tg.TransactionID
+            WHERE t.Account = ?
+              AND tg.CategoryID IS NULL
+            ORDER BY t.Date DESC
+            `,
+            [account]
         )
         return result
     }
 
     const result = await db.getAllAsync(
-        `SELECT * FROM transactionsTable WHERE TransactionString IN (
-            SELECT TransactionString FROM tagsTable WHERE Category = ?
-        )
-        ORDER BY Date DESC`,
-        [category]
+        `
+        SELECT t.*
+        FROM transactionsTable t
+        INNER JOIN tagsTable tg
+            ON t.TransactionID = tg.TransactionID
+        WHERE tg.CategoryID = ?
+        ORDER BY t.Date DESC
+        `,
+        [categoryID]
     )
     return result
 }
 
-export async function getCategoryGivenTransaction(TransactionString) {
+export async function getCategoryGivenTransaction(transactionID) {
     const db = await getDB()
     const result = await db.getAllAsync(
-        `SELECT Category FROM tagsTable WHERE TransactionString = ?`,
-        [TransactionString]
+        `SELECT Category FROM tagsTable WHERE TransactionID = ?`,
+        [transactionID]
     )
     return result
 }

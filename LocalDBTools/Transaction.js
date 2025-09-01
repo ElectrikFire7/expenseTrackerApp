@@ -5,25 +5,31 @@ export async function addTransaction(
     date,
     amount,
     debited,
-    transactionID = null,
+    account,
+    transactionGivenID = null,
     recipient = null
 ) {
     const db = await getDB()
     try {
-        await db.runAsync(
+        const result = await db.runAsync(
             `INSERT INTO transactionsTable 
-        (TransactionString, Date, Amount, Debited, TransactionID, Recipient) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (TransactionString, Date, Amount, Debited, TransactionGivenID, Recipient, Account) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 transactionString,
                 date,
                 amount,
                 debited ? 1 : 0,
-                transactionID,
+                transactionGivenID,
                 recipient,
+                account,
             ]
         )
-        return { success: true, message: 'Transaction added successfully' }
+        return {
+            success: true,
+            message: 'Transaction added successfully',
+            transactionID: result.lastInsertRowId,
+        }
     } catch (err) {
         if (
             err.message.includes('UNIQUE constraint failed') ||
@@ -40,52 +46,22 @@ export async function addTransaction(
     }
 }
 
-export async function updateTransaction(
-    transactionString,
-    newDate,
-    newAmount,
-    newDebited,
-    newTransactionID = null,
-    newRecipient = null
-) {
+export async function deleteTransaction(transactionID) {
     const db = await getDB()
     const result = await db.runAsync(
-        `UPDATE transactionsTable 
-     SET Date = ?, Amount = ?, Debited = ?, TransactionID = ?, Recipient = ? 
-     WHERE TransactionString = ?`,
-        [
-            newDate,
-            newAmount,
-            newDebited ? 1 : 0,
-            newTransactionID,
-            newRecipient,
-            transactionString,
-        ]
-    )
-
-    if (result.changes === 0) {
-        console.log(`Transaction '${transactionString}' not found`)
-    } else {
-        console.log(`Transaction '${transactionString}' updated`)
-    }
-}
-
-export async function deleteTransaction(transactionString) {
-    const db = await getDB()
-    const result = await db.runAsync(
-        `DELETE FROM transactionsTable WHERE TransactionString = ?`,
-        [transactionString]
+        `DELETE FROM transactionsTable WHERE TransactionID = ?`,
+        [transactionID]
     )
 
     if (result.changes === 0) {
         return {
             success: false,
-            message: `Transaction '${transactionString}' not found`,
+            message: `Transaction with ID '${transactionID}' not found`,
         }
     } else {
         return {
             success: true,
-            message: `Transaction '${transactionString}' deleted`,
+            message: `Transaction with ID '${transactionID}' deleted`,
         }
     }
 }

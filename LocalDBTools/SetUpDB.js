@@ -14,32 +14,40 @@ export async function setUpDB() {
     const db = await getDB()
 
     await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS accountsTable(
+            Account TEXT PRIMARY KEY NOT NULL
+        );
+        
         CREATE TABLE IF NOT EXISTS transactionsTable(
-            TransactionString TEXT PRIMARY KEY NOT NULL,
-            Date TEXT,
-            Amount REAL,
-            Debited INTEGER,
-            TransactionID TEXT,
+            TransactionID INTEGER PRIMARY KEY AUTOINCREMENT,
+            TransactionString TEXT NOT NULL,
+            Date TEXT NOT NULL,
+            Amount REAL NOT NULL,
+            Debited INTEGER NOT NULL,
+            TransactionGivenID TEXT,
             Recipient TEXT,
-            RecipientBank TEXT
+            RecipientBank TEXT,
+            Account TEXT NOT NULL,
+            FOREIGN KEY (Account) REFERENCES accountsTable (Account) ON DELETE CASCADE,
+            UNIQUE (TransactionString, Account)
         );
 
         CREATE TABLE IF NOT EXISTS categoriesTable(
-            Category TEXT PRIMARY KEY NOT NULL,
-            Tokens TEXT
+            CategoryID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Category TEXT NOT NULL,
+            Tokens TEXT,
+            Account TEXT NOT NULL,
+            FOREIGN KEY (Account) REFERENCES accountsTable(Account) ON DELETE CASCADE,
+            UNIQUE (Account, Category)
         );
 
         CREATE TABLE IF NOT EXISTS tagsTable(
-            Category TEXT NOT NULL,
-            TransactionString TEXT NOT NULL,
-            PRIMARY KEY (Category, TransactionString),
-            FOREIGN KEY (TransactionString) REFERENCES transactionsTable(TransactionString) ON DELETE CASCADE,
-            FOREIGN KEY (Category) REFERENCES categoriesTable(Category) ON DELETE CASCADE
+            CategoryID INTEGER NOT NULL,
+            TransactionID INTEGER NOT NULL,
+            PRIMARY KEY (CategoryID, TransactionID),
+            FOREIGN KEY (TransactionID) REFERENCES transactionsTable(TransactionID) ON DELETE CASCADE,
+            FOREIGN KEY (CategoryID) REFERENCES categoriesTable(CategoryID) ON DELETE CASCADE
         );
-
-        CREATE TABLE IF NOT EXISTS userTable(
-            Username TEXT PRIMARY KEY NOT NULL
-        )
     `)
 
     return true
@@ -55,16 +63,19 @@ export async function getDBInfo() {
     const categories = await db.getAllAsync('SELECT * FROM categoriesTable')
     const transactions = await db.getAllAsync('SELECT * FROM transactionsTable')
     const tags = await db.getAllAsync('SELECT * FROM tagsTable')
-    const users = await db.getAllAsync('SELECT * FROM userTable')
+    const accounts = await db.getAllAsync('SELECT * FROM accountsTable')
     console.log('Categories Table Entries:', categories.length, categories)
     console.log('Transactions Table Entries:', transactions.length)
-    console.log('Tags Table Entries:', tags.length)
-    console.log('Users Table Entries:', users.length, users)
+    console.log('Tags Table Entries:', tags.length, tags)
+    console.log('Accounts Table Entries:', accounts.length, accounts)
     return tables
 }
 
 export async function dropTable() {
     const db = await getDB()
-    await db.execAsync(`DROP TABLE IF EXISTS userTable;`)
+    await db.execAsync(`DROP TABLE IF EXISTS categoriesTable;`)
+    await db.execAsync(`DROP TABLE IF EXISTS transactionsTable;`)
+    await db.execAsync(`DROP TABLE IF EXISTS tagsTable;`)
+    await db.execAsync(`DROP TABLE IF EXISTS accountsTable;`)
     return true
 }

@@ -4,14 +4,15 @@ import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system'
 import { StyleSheet } from 'react-native'
 import { parseICICICSV } from '../LocalDBTools/BankParserTools/iciciParser.js'
+import { parseSBICSV } from '../LocalDBTools/BankParserTools/sbiParser.js'
 import { addTransaction } from '../LocalDBTools/Transaction.js'
+import { parseTransactionForAllCategories } from '../LocalDBTools/storedParserTools/TagTransactions.js'
 import DropDownPicker from 'react-native-dropdown-picker'
-import userStore from '../Store/userStore'
+import accountStore from '../Store/accountStore.js'
+import masterStyles from '../Styles/StylesMaster.js'
 
 const AddTransaction = ({ navigation }) => {
-    if (!userStore.getState().currentUser) {
-        return <Text>No user selected/created</Text>
-    }
+    const account = accountStore((state) => state.currentAccount)
     const [transactionString, setTransactionString] = useState('')
     const [date, setDate] = useState('')
     const [amountString, setAmountString] = useState('')
@@ -19,7 +20,10 @@ const AddTransaction = ({ navigation }) => {
     const [file, setFile] = useState(null)
     const [openDropdown, setOpenDropdown] = useState(false)
     const [bank, setBank] = useState(null)
-    const [items, setItems] = useState([{ label: 'ICICI', value: 'ICICI' }])
+    const [items, setItems] = useState([
+        { label: 'ICICI', value: 'ICICI' },
+        { label: 'SBI', value: 'SBI' },
+    ])
 
     const pickCSV = async () => {
         try {
@@ -54,168 +58,180 @@ const AddTransaction = ({ navigation }) => {
         try {
             const fileText = await FileSystem.readAsStringAsync(fileVar.uri)
             if (bank === 'ICICI') {
-                parseICICICSV(fileText)
+                const result = await parseICICICSV(fileText, account)
+                Alert.alert(result.message)
+            } else if (bank === 'SBI') {
+                const result = await parseSBICSV(fileText, account)
+                Alert.alert(result.message)
             }
+
+            setFile(null)
+            setBank(null)
         } catch (err) {
             console.error('Error parsing CSV:', err)
         }
     }
 
+    const addNewTransaction = async () => {
+        if (!transactionString.trim() || !date.trim() || !amountString.trim()) {
+            alert('Please fill in all fields.')
+            return
+        }
+        const dateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/
+        if (!dateRegex.test(date.trim())) {
+            alert('Date must be in yyyy-mm-dd format.')
+            return
+        }
+        if (isNaN(parseFloat(amountString))) {
+            alert('Amount must be a valid number.')
+            return
+        }
+        let result = await addTransaction(
+            transactionString,
+            date,
+            parseFloat(amountString),
+            isDebit,
+            account
+        )
+        if (result.success) {
+            let result2 = parseTransactionForAllCategories(
+                result.transactionID,
+                account
+            )
+        }
+        alert(result.message)
+        setTransactionString('')
+        setDate('')
+        setAmountString('')
+        setIsDebit(true)
+    }
+
     return (
-        <View style={styles.container}>
-            <View style={styles.headerBar}>
-                <Text style={styles.header}>Add New Transaction</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    value={transactionString}
-                    onChangeText={(text) => setTransactionString(text)}
-                    placeholder="* Enter the whole transaction detail uri"
-                />
-                <TextInput
-                    style={styles.input}
-                    value={date}
-                    onChangeText={(text) => setDate(text)}
-                    placeholder="* Enter the date (dd-mm-yyyy)"
-                />
-
-                <TextInput
-                    style={styles.input}
-                    keyboardType="numeric"
-                    value={amountString}
-                    onChangeText={(text) => setAmountString(text)}
-                    placeholder="* Enter the amount"
-                />
-
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginVertical: 8,
-                    }}
-                >
-                    <Text style={styles.type}>Type: </Text>
-                    <TouchableOpacity
-                        style={{
-                            marginHorizontal: 8,
-                            borderRadius: 50,
-                            borderWidth: 1,
-                            backgroundColor: isDebit ? 'red' : 'green',
-                            paddingHorizontal: 20,
-                            paddingVertical: 4,
-                        }}
-                        onPress={() => setIsDebit(!isDebit)}
-                    >
-                        <Text>{isDebit ? 'Debit' : 'Credit'}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.hint}>click to change</Text>
-                </View>
-            </View>
-            <TouchableOpacity
-                onPress={async () => {
-                    if (
-                        !transactionString.trim() ||
-                        !date.trim() ||
-                        !amountString.trim()
-                    ) {
-                        alert('Please fill in all fields.')
-                        return
-                    }
-                    const dateRegex =
-                        /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/
-                    if (!dateRegex.test(date.trim())) {
-                        alert('Date must be in yyyy-mm-dd format.')
-                        return
-                    }
-                    if (isNaN(parseFloat(amountString))) {
-                        alert('Amount must be a valid number.')
-                        return
-                    }
-                    let result = await addTransaction(
-                        transactionString,
-                        date,
-                        parseFloat(amountString),
-                        isDebit
-                    )
-                    alert(result.message)
-                    setTransactionString('')
-                    setDate('')
-                    setAmountString('')
-                    setIsDebit(true)
-                }}
-                style={styles.addTransaction}
-            >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                    Add Transaction
-                </Text>
-            </TouchableOpacity>
-            <View style={styles.headerBar}>
-                <Text style={styles.header}>Add Bank Statement .csv/xlsx</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <DropDownPicker
-                    open={openDropdown}
-                    value={bank}
-                    items={items}
-                    setOpen={setOpenDropdown}
-                    setValue={setBank}
-                    setItems={setItems}
-                />
-                <TouchableOpacity
-                    style={{
-                        marginVertical: 8,
-                        paddingVertical: 12,
-                        paddingHorizontal: 12,
-                        width: '30%',
-                        borderRadius: 10,
-                        backgroundColor: '#007bff',
-                        alignItems: 'center',
-                    }}
-                    onPress={pickCSV}
-                >
-                    <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                        Choose file
+        <>
+            {account == null ? (
+                <View style={masterStyles.emptyData}>
+                    <Text style={masterStyles.emptyDataText}>
+                        Select an account to use this page
                     </Text>
-                </TouchableOpacity>
-                <Text
-                    style={{
-                        fontWeight: 'bold',
-                        color: '#000',
-                        paddingLeft: 8,
-                    }}
-                >
-                    {file ? file.name : 'No file selected'}
-                </Text>
-            </View>
-            <TouchableOpacity
-                onPress={() => {
-                    parseCSV(file)
-                }}
-                style={styles.addTransaction}
-            >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                    Parse File
-                </Text>
-            </TouchableOpacity>
-        </View>
+                </View>
+            ) : (
+                <View style={masterStyles.screenContainer}>
+                    <View style={masterStyles.headerBar}>
+                        <Text style={masterStyles.header}>
+                            Add New Transaction
+                        </Text>
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            value={transactionString}
+                            onChangeText={(text) => setTransactionString(text)}
+                            placeholder="* Enter the whole transaction detail uri"
+                        />
+                        <TextInput
+                            style={styles.input}
+                            value={date}
+                            onChangeText={(text) => setDate(text)}
+                            placeholder="* Enter the date (yyyy-mm-dd)"
+                        />
+
+                        <TextInput
+                            style={styles.input}
+                            keyboardType="numeric"
+                            value={amountString}
+                            onChangeText={(text) => setAmountString(text)}
+                            placeholder="* Enter the amount"
+                        />
+
+                        <View
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                marginVertical: 8,
+                            }}
+                        >
+                            <Text style={styles.type}>Type: </Text>
+                            <TouchableOpacity
+                                style={{
+                                    marginHorizontal: 8,
+                                    borderRadius: 50,
+                                    borderWidth: 1,
+                                    backgroundColor: isDebit ? 'red' : 'green',
+                                    paddingHorizontal: 20,
+                                    paddingVertical: 4,
+                                }}
+                                onPress={() => setIsDebit(!isDebit)}
+                            >
+                                <Text>{isDebit ? 'Debit' : 'Credit'}</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.hint}>click to change</Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        onPress={addNewTransaction}
+                        style={styles.addTransaction}
+                    >
+                        <Text style={{ fontWeight: 'bold', color: '#fff' }}>
+                            Add Transaction
+                        </Text>
+                    </TouchableOpacity>
+                    <View style={masterStyles.headerBar}>
+                        <Text style={masterStyles.header}>
+                            Add Bank Statement .csv/xlsx
+                        </Text>
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <DropDownPicker
+                            open={openDropdown}
+                            value={bank}
+                            items={items}
+                            setOpen={setOpenDropdown}
+                            setValue={setBank}
+                            setItems={setItems}
+                        />
+                        <TouchableOpacity
+                            style={{
+                                marginVertical: 8,
+                                paddingVertical: 12,
+                                paddingHorizontal: 12,
+                                width: '30%',
+                                borderRadius: 10,
+                                backgroundColor: '#007bff',
+                                alignItems: 'center',
+                            }}
+                            onPress={pickCSV}
+                        >
+                            <Text style={{ fontWeight: 'bold', color: '#fff' }}>
+                                Choose file
+                            </Text>
+                        </TouchableOpacity>
+                        <Text
+                            style={{
+                                fontWeight: 'bold',
+                                color: '#000',
+                                paddingLeft: 8,
+                            }}
+                        >
+                            {file ? file.name : 'No file selected'}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={() => {
+                            parseCSV(file)
+                        }}
+                        style={styles.addTransaction}
+                    >
+                        <Text style={{ fontWeight: 'bold', color: '#fff' }}>
+                            Parse File
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+        </>
     )
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-    },
-    headerBar: {
-        marginTop: 50,
-        width: '90%',
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
     inputContainer: {
         width: '90%',
         marginTop: 8,
@@ -231,7 +247,8 @@ const styles = StyleSheet.create({
     type: { fontSize: 16 },
     hint: { fontSize: 12, color: '#0000006c' },
     addTransaction: {
-        marginVertical: 8,
+        marginTop: 4,
+        marginBottom: 32,
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 50,

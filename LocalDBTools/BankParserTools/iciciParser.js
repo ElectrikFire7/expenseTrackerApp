@@ -1,7 +1,7 @@
 import { addTransaction } from '../Transaction'
-import { parseTransactionListForAllCategories } from '../storedParserTools/TagTransactions'
+import { parseTransactionForAllCategories } from '../storedParserTools/TagTransactions'
 
-export async function parseICICICSV(csvData) {
+export async function parseICICICSV(csvData, account) {
     const lines = csvData.split(/\r?\n/)
 
     const headerIndex = lines.findIndex((line) => {
@@ -16,8 +16,10 @@ export async function parseICICICSV(csvData) {
     })
 
     if (headerIndex === -1) {
-        console.error('Table header not found!')
-        return
+        return {
+            success: false,
+            message: 'Failed: Are you sure this is a valid ICICI CSV file?',
+        }
     }
     const tableLines = lines.slice(headerIndex + 2)
 
@@ -26,7 +28,10 @@ export async function parseICICICSV(csvData) {
     )
 
     if (blankIndex == -1) {
-        return
+        return {
+            success: false,
+            message: 'Failed: Are you sure this is a valid ICICI CSV file?',
+        }
     }
 
     const onlyTableLines = tableLines.slice(0, blankIndex)
@@ -46,9 +51,19 @@ export async function parseICICICSV(csvData) {
         const amount = deposit > 0 ? deposit : withdraw
         const debited = withdraw > 0 ? 1 : 0
 
-        let response = await addTransaction(particulars, date, amount, debited)
+        let response = await addTransaction(
+            particulars,
+            date,
+            amount,
+            debited,
+            account
+        )
         if (response.success) {
-            await parseTransactionListForAllCategories([particulars])
+            await parseTransactionForAllCategories(
+                response.transactionID,
+                account
+            )
         }
     }
+    return { success: true, message: 'Transactions parsed successfully' }
 }

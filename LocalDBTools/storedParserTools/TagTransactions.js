@@ -1,84 +1,87 @@
 import { getDB } from '../SetUpDB'
 import { addTag } from '../Tags'
+import { findMatches } from '../../utils/findTokenMatches'
 
-export async function parseForAllCategoriesAllTransactions() {
-    const db = await getDB()
-    const categories = await db.getAllAsync('SELECT * FROM categoriesTable')
-
-    const transactionStrings = await db.getAllAsync(
-        'SELECT TransactionString FROM transactionsTable'
-    )
-
-    for (const transactionString of transactionStrings) {
-        for (const category of categories) {
-            const tagStrings = category.tagStrings
-                ? category.tagStrings.split(' ')
-                : []
-            for (const tagString of tagStrings) {
-                if (
-                    transactionString.TransactionString.toLowerCase().includes(
-                        tagString.toLowerCase()
-                    )
-                ) {
-                    await addTag(
-                        category.category,
-                        transactionString.TransactionString
-                    )
-                }
-            }
-        }
-    }
-}
-
-export async function parseAllTransactionsForGivenCategory(category) {
-    const db = await getDB()
-    const transactionStrings = await db.getAllAsync(
-        'SELECT TransactionString FROM transactionsTable'
-    )
-
-    for (const transactionString of transactionStrings) {
-        const tagStrings = category.tagStrings
-            ? category.tagStrings.split(' ')
-            : []
-        for (const tagString of tagStrings) {
-            if (
-                transactionString.TransactionString.toLowerCase().includes(
-                    tagString.toLowerCase()
-                )
-            ) {
-                await addTag(
-                    category.category,
-                    transactionString.TransactionString
-                )
-            }
-        }
-    }
-}
-
-export async function parseTransactionListForAllCategories(transactionList) {
-    const db = await getDB()
-    const categories = await db.getAllAsync('SELECT * FROM categoriesTable')
-
-    for (const transactionString of transactionList) {
-        let response = await db.getAllAsync(
-            'SELECT * FROM transactionsTable WHERE TransactionString = ?',
-            [transactionString]
+export async function parseAllTransactionsForGivenCategory(
+    categoryID,
+    account
+) {
+    try {
+        const db = await getDB()
+        const transactionsList = await db.getAllAsync(
+            'SELECT * FROM transactionsTable WHERE Account = ?',
+            [account]
         )
-        if (response.length > 0) {
-            for (const category of categories) {
-                const tagStrings = category.tagStrings
-                    ? category.tagStrings.split(' ')
-                    : []
-                for (const tagString of tagStrings) {
-                    if (
-                        transactionString
-                            .toLowerCase()
-                            .includes(tagString.toLowerCase())
-                    ) {
-                        await addTag(category.category, transactionString)
-                    }
-                }
+        const categoryList = await db.getAllAsync(
+            'SELECT * FROM categoriesTable WHERE CategoryID = ?',
+            [categoryID]
+        )
+        const category = categoryList[0]
+
+        for (const transaction of transactionsList) {
+            const tokens = category.Tokens
+                ? category.Tokens.split(' ').map((token) => token.toLowerCase())
+                : []
+            let matches = findMatches(
+                transaction.TransactionString.toLowerCase(),
+                tokens
+            )
+            console.log('input: ', transaction.TransactionString, tokens)
+            console.log(`Matches for category ${category.CategoryID}:`, matches)
+            if (matches.size > 0) {
+                await addTag(category.CategoryID, transaction.TransactionID)
             }
+
+            // for (const token of tokens) {
+            //     if (
+            //         transaction.TransactionString.toLowerCase().includes(
+            //             token.toLowerCase()
+            //         )
+            //     ) {
+            //         await addTag(category.CategoryID, transaction.TransactionID)
+            //     }
+            // }
         }
+    } catch (err) {
+        console.error('Error parsing transactions for category:', err)
+    }
+}
+
+export async function parseTransactionForAllCategories(transactionID, account) {
+    const db = await getDB()
+    const categories = await db.getAllAsync(
+        'SELECT * FROM categoriesTable WHERE Account = ?',
+        [account]
+    )
+
+    const transactionList = await db.getAllAsync(
+        'SELECT * FROM transactionsTable WHERE TransactionID = ?',
+        [transactionID]
+    )
+
+    const transaction = transactionList[0]
+
+    for (const category of categories) {
+        const tokens = category.Tokens
+            ? category.Tokens.split(' ').map((token) => token.toLowerCase())
+            : []
+        let matches = findMatches(
+            transaction.TransactionString.toLowerCase(),
+            tokens
+        )
+        console.log('input: ', transaction.TransactionString, tokens)
+        console.log(`Matches for category ${category.CategoryID}:`, matches)
+        if (matches.size > 0) {
+            await addTag(category.CategoryID, transaction.TransactionID)
+        }
+        // for (const token of tokens) {
+        //     if (
+        //         transaction.TransactionString.toLowerCase().includes(
+        //             token.toLowerCase()
+        //         )
+        //     ) {
+        //         await addTag(category.CategoryID, transaction.TransactionID)
+        //     }
+        // }
     }
 }

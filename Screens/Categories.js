@@ -1,4 +1,4 @@
-import react, { useState, useEffect } from 'react'
+import react, { useState, useEffect, use } from 'react'
 import {
     View,
     Text,
@@ -10,24 +10,27 @@ import {
 import { addCategory, getAllCategories } from '../LocalDBTools/Category'
 import { StyleSheet, Alert } from 'react-native'
 import { parseAllTransactionsForGivenCategory } from '../LocalDBTools/storedParserTools/TagTransactions'
-import userStore from '../Store/userStore'
+import accountStore from '../Store/accountStore.js'
+import masterStyles from '../Styles/StylesMaster.js'
+import AddButton from '../Components/AddButton.js'
 
 const Categories = ({ navigation }) => {
-    if (!userStore.getState().currentUser) {
-        return <Text>No user selected/created</Text>
-    }
-    const user = userStore.getState().currentUser
+    const account = accountStore((state) => state.currentAccount)
     const [categories, setCategories] = useState([])
     const [modalVisible, setModalVisible] = useState(false)
     const [newCategory, setNewCategory] = useState('')
-    const [newTags, setNewTags] = useState('')
+    const [newTokens, setNewTokens] = useState('')
     const [disableCreate, setDisableCreate] = useState(false)
 
     const fetchCategories = async () => {
-        let allCategories = await getAllCategories()
+        let allCategories = await getAllCategories(account)
         allCategories = [
             ...allCategories,
-            { category: 'Uncategorized', tagStrings: '' },
+            {
+                CategoryID: 'Uncategorized',
+                Category: 'Uncategorized',
+                Tokens: '',
+            },
         ]
         setCategories(allCategories)
     }
@@ -36,137 +39,135 @@ const Categories = ({ navigation }) => {
         if (!modalVisible) {
             fetchCategories()
         }
-    }, [modalVisible])
+    }, [modalVisible, account])
 
     return (
-        <View style={styles.screenContainer}>
-            <View style={styles.infoBarContainer}>
-                <Text>{user.username}'s Categories</Text>
-                <TouchableOpacity
-                    style={styles.addCategoryButton}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <Text style={styles.addCategoryButtonText}>+</Text>
-                </TouchableOpacity>
-            </View>
-            <FlatList
-                style={styles.categoryDiv}
-                data={categories}
-                keyExtractor={(item) => item.category}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        key={item}
-                        style={styles.categoryCard}
-                        onPress={() =>
-                            navigation.navigate('CategoryTransactions', {
-                                category: item.category,
-                                tagStrings: item.tagStrings,
-                            })
-                        }
-                    >
-                        <Text>{item.category}</Text>
-                    </TouchableOpacity>
-                )}
-            />
-
-            <Modal
-                animationType="slide"
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-                transparent={true}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalHeader}>Add New Category</Text>
-                        <TextInput
-                            placeholder="Category name"
-                            value={newCategory}
-                            onChangeText={setNewCategory}
-                            style={styles.modalInput}
-                        />
-
-                        <TextInput
-                            placeholder="Tags (space separated separated)"
-                            value={newTags}
-                            onChangeText={setNewTags}
-                            style={styles.modalInput}
-                        />
-
-                        <View style={styles.modalFooter}>
-                            <TouchableOpacity
-                                style={{
-                                    width: '50%',
-                                    backgroundColor: '#0061c9ad',
-                                    padding: 10,
-                                    borderRadius: 10,
-                                    alignItems: 'center',
-                                    marginHorizontal: 5,
-                                }}
-                                onPress={async () => {
-                                    setDisableCreate(true)
-                                    let response = {}
-                                    if (newCategory !== '' && newTags !== '') {
-                                        response = await addCategory(
-                                            newCategory,
-                                            newTags
-                                        )
-                                        if (response.success) {
-                                            parseAllTransactionsForGivenCategory(
-                                                {
-                                                    category: newCategory,
-                                                    tagStrings: newTags,
-                                                }
-                                            )
-                                        }
-                                    } else {
-                                        response = {
-                                            success: false,
-                                            message:
-                                                'Please fill in all fields',
-                                        }
-                                    }
-                                    setModalVisible(false)
-                                    Alert.alert(response.message)
-                                    setDisableCreate(false)
-                                    setNewCategory('')
-                                    setNewTags('')
-                                }}
-                                disabled={disableCreate}
-                            >
-                                <Text>Add</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{
-                                    width: '50%',
-                                    backgroundColor: '#c90000ad',
-                                    padding: 10,
-                                    borderRadius: 10,
-                                    alignItems: 'center',
-                                    marginHorizontal: 5,
-                                }}
-                                onPress={() => {
-                                    setNewCategory('')
-                                    setNewTags('')
-                                    setModalVisible(false)
-                                }}
-                            >
-                                <Text>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+        <>
+            {account == null ? (
+                <View style={masterStyles.emptyData}>
+                    <Text style={masterStyles.emptyDataText}>
+                        Select an account to use this page
+                    </Text>
                 </View>
-            </Modal>
-        </View>
+            ) : (
+                <View style={masterStyles.screenContainer}>
+                    <View style={masterStyles.headerBar}>
+                        <Text style={masterStyles.header}>
+                            {account}'s Categories
+                        </Text>
+                        <AddButton
+                            onPressAction={() => setModalVisible(true)}
+                            disable={disableCreate}
+                        />
+                    </View>
+                    <FlatList
+                        style={styles.categoryDiv}
+                        data={categories}
+                        keyExtractor={(item) => item.Category}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                key={item.Category}
+                                style={styles.categoryCard}
+                                onPress={() =>
+                                    navigation.navigate(
+                                        'CategoryTransactions',
+                                        {
+                                            CategoryID: item.CategoryID,
+                                            Category: item.Category,
+                                            Tokens: item.Tokens,
+                                        }
+                                    )
+                                }
+                            >
+                                <Text>{item?.Category || 'Uncategorized'}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+
+                    <Modal
+                        animationType="slide"
+                        visible={modalVisible}
+                        onRequestClose={() => setModalVisible(false)}
+                        transparent={true}
+                    >
+                        <View style={masterStyles.modalContainer}>
+                            <View style={masterStyles.modalCard}>
+                                <Text style={masterStyles.modalHeader}>
+                                    Add New Category
+                                </Text>
+                                <TextInput
+                                    placeholder="Category name"
+                                    value={newCategory}
+                                    onChangeText={setNewCategory}
+                                    style={styles.modalInput}
+                                />
+
+                                <TextInput
+                                    placeholder="Tokens (space separated)"
+                                    value={newTokens}
+                                    onChangeText={setNewTokens}
+                                    style={styles.modalInput}
+                                />
+
+                                <View style={masterStyles.modalFooter}>
+                                    <TouchableOpacity
+                                        style={masterStyles.modalPositiveButton}
+                                        onPress={async () => {
+                                            setDisableCreate(true)
+                                            let response = {}
+                                            if (
+                                                newCategory !== '' &&
+                                                newTokens !== ''
+                                            ) {
+                                                response = await addCategory(
+                                                    newCategory,
+                                                    newTokens,
+                                                    account
+                                                )
+                                                if (response.success) {
+                                                    await parseAllTransactionsForGivenCategory(
+                                                        response.categoryID,
+                                                        account
+                                                    )
+                                                }
+                                            } else {
+                                                response = {
+                                                    success: false,
+                                                    message:
+                                                        'Please fill in all fields',
+                                                }
+                                            }
+                                            setModalVisible(false)
+                                            Alert.alert(response.message)
+                                            setDisableCreate(false)
+                                            setNewCategory('')
+                                            setNewTokens('')
+                                        }}
+                                        disabled={disableCreate}
+                                    >
+                                        <Text>Add</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={masterStyles.modalNegativeButton}
+                                        onPress={() => {
+                                            setNewCategory('')
+                                            setNewTokens('')
+                                            setModalVisible(false)
+                                        }}
+                                    >
+                                        <Text>Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+                </View>
+            )}
+        </>
     )
 }
 
 const styles = StyleSheet.create({
-    screenContainer: {
-        flex: 1,
-        alignItems: 'center',
-        paddingTop: 60,
-        width: '100%',
-    },
     categoryDiv: {
         width: '100%',
     },
@@ -179,41 +180,6 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         boxShadow: '2px 4px 2px rgba(0, 0, 0, 0.34)',
     },
-    infoBarContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '90%',
-        marginBottom: 20,
-    },
-    addCategoryButton: {
-        backgroundColor: '#0061c9ad',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: '50%',
-    },
-    addCategoryButtonText: {
-        color: '#ffffff',
-        fontWeight: 'bold',
-    },
-    modalContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        flex: 1,
-    },
-    modalCard: {
-        backgroundColor: '#ffffff',
-        borderRadius: 10,
-        padding: 20,
-        width: '80%',
-        elevation: 5,
-        alignItems: 'center',
-        flexDirection: 'column',
-    },
-    modalHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 12,
-    },
     modalInput: {
         borderWidth: 1,
         borderColor: '#cccccc',
@@ -221,12 +187,6 @@ const styles = StyleSheet.create({
         padding: 10,
         width: '80%',
         marginBottom: 12,
-    },
-    modalFooter: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '80%',
     },
 })
 
