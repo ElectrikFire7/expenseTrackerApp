@@ -1,13 +1,12 @@
-import { getDB } from '../SetUpDB'
 import { addTag } from '../Tags'
 import { findMatches } from '../../utils/findTokenMatches'
 
 export async function parseAllTransactionsForGivenCategory(
+    db,
     categoryID,
     account
 ) {
     try {
-        const db = await getDB()
         const transactionsList = await db.getAllAsync(
             'SELECT * FROM transactionsTable WHERE Account = ?',
             [account]
@@ -26,10 +25,8 @@ export async function parseAllTransactionsForGivenCategory(
                 transaction.TransactionString.toLowerCase(),
                 tokens
             )
-            console.log('input: ', transaction.TransactionString, tokens)
-            console.log(`Matches for category ${category.CategoryID}:`, matches)
             if (matches.size > 0) {
-                await addTag(category.CategoryID, transaction.TransactionID)
+                await addTag(db, category.CategoryID, transaction.TransactionID)
             }
 
             // for (const token of tokens) {
@@ -47,8 +44,11 @@ export async function parseAllTransactionsForGivenCategory(
     }
 }
 
-export async function parseTransactionForAllCategories(transactionID, account) {
-    const db = await getDB()
+export async function parseTransactionForAllCategories(
+    db,
+    transactionID,
+    account
+) {
     const categories = await db.getAllAsync(
         'SELECT * FROM categoriesTable WHERE Account = ?',
         [account]
@@ -69,10 +69,8 @@ export async function parseTransactionForAllCategories(transactionID, account) {
             transaction.TransactionString.toLowerCase(),
             tokens
         )
-        console.log('input: ', transaction.TransactionString, tokens)
-        console.log(`Matches for category ${category.CategoryID}:`, matches)
         if (matches.size > 0) {
-            await addTag(category.CategoryID, transaction.TransactionID)
+            await addTag(db, category.CategoryID, transaction.TransactionID)
         }
         // for (const token of tokens) {
         //     if (

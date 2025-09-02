@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system'
+import { useSQLiteContext } from 'expo-sqlite'
 import { StyleSheet } from 'react-native'
 import { parseICICICSV } from '../LocalDBTools/BankParserTools/iciciParser.js'
 import { parseSBICSV } from '../LocalDBTools/BankParserTools/sbiParser.js'
@@ -13,6 +14,7 @@ import masterStyles from '../Styles/StylesMaster.js'
 
 const AddTransaction = ({ navigation }) => {
     const account = accountStore((state) => state.currentAccount)
+    const db = useSQLiteContext()
     const [transactionString, setTransactionString] = useState('')
     const [date, setDate] = useState('')
     const [amountString, setAmountString] = useState('')
@@ -58,10 +60,10 @@ const AddTransaction = ({ navigation }) => {
         try {
             const fileText = await FileSystem.readAsStringAsync(fileVar.uri)
             if (bank === 'ICICI') {
-                const result = await parseICICICSV(fileText, account)
+                const result = await parseICICICSV(db, fileText, account)
                 Alert.alert(result.message)
             } else if (bank === 'SBI') {
-                const result = await parseSBICSV(fileText, account)
+                const result = await parseSBICSV(db, fileText, account)
                 Alert.alert(result.message)
             }
 
@@ -87,6 +89,7 @@ const AddTransaction = ({ navigation }) => {
             return
         }
         let result = await addTransaction(
+            db,
             transactionString,
             date,
             parseFloat(amountString),
@@ -95,6 +98,7 @@ const AddTransaction = ({ navigation }) => {
         )
         if (result.success) {
             let result2 = parseTransactionForAllCategories(
+                db,
                 result.transactionID,
                 account
             )

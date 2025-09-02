@@ -1,7 +1,7 @@
 import { addTransaction } from '../Transaction'
 import { parseTransactionForAllCategories } from '../storedParserTools/TagTransactions'
 
-export async function parseSBICSV(csvData, account) {
+export async function parseSBICSV(db, csvData, account) {
     const lines = csvData.split(/\r?\n/)
 
     const headerIndex = lines.findIndex((line) => {
@@ -51,6 +51,7 @@ export async function parseSBICSV(csvData, account) {
             continue
 
         let response = await addTransaction(
+            db,
             parsedline.description,
             parsedline.date,
             parsedline.amount,
@@ -59,6 +60,7 @@ export async function parseSBICSV(csvData, account) {
         )
         if (response.success) {
             await parseTransactionForAllCategories(
+                db,
                 response.transactionID,
                 account
             )

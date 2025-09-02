@@ -1,8 +1,5 @@
-import { getDB } from './SetUpDB'
-
-export async function addAccount(account) {
+export async function addAccount(db, account) {
     try {
-        const db = await getDB()
         await db.runAsync(
             `
             INSERT INTO accountsTable (Account) VALUES (?);
@@ -26,9 +23,8 @@ export async function addAccount(account) {
     }
 }
 
-export async function getAllAccounts() {
+export async function getAllAccounts(db) {
     try {
-        const db = await getDB()
         if (!db) {
             throw new Error('Database not initialized (getDB returned null)')
         }
@@ -40,9 +36,8 @@ export async function getAllAccounts() {
     }
 }
 
-export async function deleteAccount(account) {
+export async function deleteAccount(db, account) {
     try {
-        const db = await getDB()
         const result = await db.runAsync(
             `
             DELETE FROM accountsTable WHERE Account = ?;

@@ -1,18 +1,4 @@
-import * as SQLite from 'expo-sqlite'
-
-let dbInstance = null
-
-export async function getDB() {
-    if (!dbInstance) {
-        dbInstance = await SQLite.openDatabaseAsync('dataDB')
-        await dbInstance.execAsync('PRAGMA foreign_keys = ON;')
-    }
-    return dbInstance
-}
-
-export async function setUpDB() {
-    const db = await getDB()
-
+export async function setUpDB(db) {
     await db.execAsync(`
         CREATE TABLE IF NOT EXISTS accountsTable(
             Account TEXT PRIMARY KEY NOT NULL
@@ -53,9 +39,7 @@ export async function setUpDB() {
     return true
 }
 
-export async function getDBInfo() {
-    const db = await getDB()
-
+export async function getDBInfo(db) {
     const tables = await db.getAllAsync(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     )
@@ -66,13 +50,12 @@ export async function getDBInfo() {
     const accounts = await db.getAllAsync('SELECT * FROM accountsTable')
     console.log('Categories Table Entries:', categories.length, categories)
     console.log('Transactions Table Entries:', transactions.length)
-    console.log('Tags Table Entries:', tags.length, tags)
+    console.log('Tags Table Entries:', tags.length)
     console.log('Accounts Table Entries:', accounts.length, accounts)
     return tables
 }
 
-export async function dropTable() {
-    const db = await getDB()
+export async function dropTables(db) {
     await db.execAsync(`DROP TABLE IF EXISTS categoriesTable;`)
     await db.execAsync(`DROP TABLE IF EXISTS transactionsTable;`)
     await db.execAsync(`DROP TABLE IF EXISTS tagsTable;`)

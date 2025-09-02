@@ -17,9 +17,10 @@ import accountStore from '../Store/accountStore.js'
 import masterStyles from '../Styles/StylesMaster.js'
 import AddButton from '../Components/AddButton.js'
 import DeleteButton from '../Components/DeleteButton.js'
-import { setUpDB } from '../LocalDBTools/SetUpDB.js'
+import { useSQLiteContext } from 'expo-sqlite'
 
 const Accounts = () => {
+    const db = useSQLiteContext()
     const [currentAccount, setCurrentAccount] = useState(null)
     const [accounts, setAccounts] = useState([])
     const [newAccount, setNewAccount] = useState('')
@@ -27,7 +28,7 @@ const Accounts = () => {
     const [modalVisible, setModalVisible] = useState(false)
 
     const handleGetAllAccounts = async () => {
-        const accountsList = await getAllAccounts()
+        const accountsList = await getAllAccounts(db)
         setAccounts(accountsList)
         if (currentAccount == null) {
             setCurrentAccount(accountsList[0].Account)
@@ -39,7 +40,7 @@ const Accounts = () => {
         setDisableCreate(true)
         let response = {}
         if (newAccount != '') {
-            response = await addAccount(newAccount)
+            response = await addAccount(db, newAccount)
         } else {
             response = {
                 success: false,
@@ -62,14 +63,9 @@ const Accounts = () => {
             setCurrentAccount(null)
             accountStore.getState().setCurrentAccount(null)
         }
-        let response = await deleteAccount(account)
+        let response = await deleteAccount(db, account)
         handleGetAllAccounts()
         Alert.alert(response.message)
-    }
-
-    const setUpApp = async () => {
-        let response = await setUpDB()
-        console.log(response)
     }
 
     useEffect(() => {
@@ -77,10 +73,6 @@ const Accounts = () => {
             handleGetAllAccounts()
         }
     }, [disableCreate])
-
-    useEffect(() => {
-        setUpApp()
-    }, [])
 
     return (
         <View style={masterStyles.screenContainer}>

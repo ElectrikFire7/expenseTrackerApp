@@ -1,7 +1,4 @@
-import { getDB } from './SetUpDB'
-
-export async function addCategory(category, tokens, account) {
-    const db = await getDB()
+export async function addCategory(db, category, tokens, account) {
     try {
         const result = await db.runAsync(
             'INSERT INTO categoriesTable (Category, Tokens, Account) VALUES (?, ?, ?)',
@@ -22,8 +19,7 @@ export async function addCategory(category, tokens, account) {
     }
 }
 
-export async function deleteCategory(categoryID) {
-    const db = await getDB()
+export async function deleteCategory(db, categoryID) {
     const result = await db.runAsync(
         'DELETE FROM categoriesTable WHERE CategoryID = ?',
         [categoryID]
@@ -42,8 +38,7 @@ export async function deleteCategory(categoryID) {
     }
 }
 
-export async function getAllCategories(account) {
-    const db = await getDB()
+export async function getAllCategories(db, account) {
     const result = await db.getAllAsync(
         'SELECT * FROM categoriesTable WHERE Account = ?',
         [account]

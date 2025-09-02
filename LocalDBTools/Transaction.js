@@ -1,6 +1,5 @@
-import { getDB } from './SetUpDB'
-
 export async function addTransaction(
+    db,
     transactionString,
     date,
     amount,
@@ -9,7 +8,6 @@ export async function addTransaction(
     transactionGivenID = null,
     recipient = null
 ) {
-    const db = await getDB()
     try {
         const result = await db.runAsync(
             `INSERT INTO transactionsTable 
@@ -46,8 +44,7 @@ export async function addTransaction(
     }
 }
 
-export async function deleteTransaction(transactionID) {
-    const db = await getDB()
+export async function deleteTransaction(db, transactionID) {
     const result = await db.runAsync(
         `DELETE FROM transactionsTable WHERE TransactionID = ?`,
         [transactionID]

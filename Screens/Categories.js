@@ -7,6 +7,7 @@ import {
     Modal,
     TextInput,
 } from 'react-native'
+import { useSQLiteContext } from 'expo-sqlite'
 import { addCategory, getAllCategories } from '../LocalDBTools/Category'
 import { StyleSheet, Alert } from 'react-native'
 import { parseAllTransactionsForGivenCategory } from '../LocalDBTools/storedParserTools/TagTransactions'
@@ -16,6 +17,7 @@ import AddButton from '../Components/AddButton.js'
 
 const Categories = ({ navigation }) => {
     const account = accountStore((state) => state.currentAccount)
+    const db = useSQLiteContext()
     const [categories, setCategories] = useState([])
     const [modalVisible, setModalVisible] = useState(false)
     const [newCategory, setNewCategory] = useState('')
@@ -23,7 +25,7 @@ const Categories = ({ navigation }) => {
     const [disableCreate, setDisableCreate] = useState(false)
 
     const fetchCategories = async () => {
-        let allCategories = await getAllCategories(account)
+        let allCategories = await getAllCategories(db, account)
         allCategories = [
             ...allCategories,
             {
@@ -120,12 +122,14 @@ const Categories = ({ navigation }) => {
                                                 newTokens !== ''
                                             ) {
                                                 response = await addCategory(
+                                                    db,
                                                     newCategory,
                                                     newTokens,
                                                     account
                                                 )
                                                 if (response.success) {
                                                     await parseAllTransactionsForGivenCategory(
+                                                        db,
                                                         response.categoryID,
                                                         account
                                                     )

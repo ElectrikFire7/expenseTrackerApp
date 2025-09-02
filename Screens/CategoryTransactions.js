@@ -7,6 +7,7 @@ import {
     FlatList,
     Modal,
 } from 'react-native'
+import { useSQLiteContext } from 'expo-sqlite'
 import { getTransactionsGivenCategory } from '../LocalDBTools/Tags'
 import { deleteCategory } from '../LocalDBTools/Category'
 import accountStore from '../Store/accountStore.js'
@@ -18,6 +19,7 @@ const CategoryTransactions = ({ route, navigation }) => {
     if (route?.params?.CategoryID == undefined) {
         navigation.navigate('Main', { screen: 'Categories' })
     }
+    const db = useSQLiteContext()
     const category = route.params.Category
     const tokens = route.params.Tokens.split(' ')
     const categoryID = route.params.CategoryID
@@ -28,25 +30,27 @@ const CategoryTransactions = ({ route, navigation }) => {
     const [modalVisible, setModalVisible] = useState(false)
     const [disableDelete, setDisableDelete] = useState(false)
 
+    const fetchTransactions = async () => {
+        const allTransactions = await getTransactionsGivenCategory(
+            db,
+            categoryID,
+            account
+        )
+        setTransactions(allTransactions)
+        const dc = allTransactions.reduce(
+            (acc, tx) => {
+                tx?.Debited == 1
+                    ? (acc.debited += tx?.Amount)
+                    : (acc.credited += tx?.Amount)
+                return acc
+            },
+            { credited: 0, debited: 0 }
+        )
+        setCredited(dc.credited.toFixed(2))
+        setDebited(dc.debited.toFixed(2))
+    }
+
     useEffect(() => {
-        const fetchTransactions = async () => {
-            const allTransactions = await getTransactionsGivenCategory(
-                categoryID,
-                account
-            )
-            setTransactions(allTransactions)
-            const dc = allTransactions.reduce(
-                (acc, tx) => {
-                    tx?.Debited == 1
-                        ? (acc.debited += tx?.Amount)
-                        : (acc.credited += tx?.Amount)
-                    return acc
-                },
-                { credited: 0, debited: 0 }
-            )
-            setCredited(dc.credited.toFixed(2))
-            setDebited(dc.debited.toFixed(2))
-        }
         fetchTransactions()
     }, [category])
 
@@ -127,7 +131,7 @@ const CategoryTransactions = ({ route, navigation }) => {
                                 style={masterStyles.modalNegativeButton}
                                 onPress={async () => {
                                     setDisableDelete(true)
-                                    await deleteCategory(categoryID)
+                                    await deleteCategory(db, categoryID)
                                     setModalVisible(false)
                                     navigation.navigate('Main', {
                                         screen: 'Categories',

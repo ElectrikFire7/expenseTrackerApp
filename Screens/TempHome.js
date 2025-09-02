@@ -1,12 +1,14 @@
 import { View, Text, Button } from 'react-native'
-import { setUpDB, getDBInfo, dropTable } from '../LocalDBTools/SetUpDB'
+import { setUpDB, getDBInfo, dropTables } from '../LocalDBTools/SetUpDB'
 import { StyleSheet } from 'react-native'
-import { parseForAllCategoriesAllTransactions } from '../LocalDBTools/storedParserTools/TagTransactions'
+import { useSQLiteContext } from 'expo-sqlite'
 
 const TempHome = () => {
+    const db = useSQLiteContext()
+
     const setUpDatabase = async () => {
         try {
-            const result = await setUpDB()
+            const result = await setUpDB(db)
             console.log('Database setup result:', result)
         } catch (error) {
             console.error('Error setting up database:', error)
@@ -15,7 +17,7 @@ const TempHome = () => {
 
     const getDatabaseInfo = async () => {
         try {
-            const info = await getDBInfo()
+            const info = await getDBInfo(db)
             console.log('Database info:', info)
         } catch (error) {
             console.error('Error getting database info:', error)
@@ -27,10 +29,9 @@ const TempHome = () => {
             <Text>Temporary Home Screen</Text>
             <Button title="Set Up Database" onPress={setUpDatabase} />
             <Button title="Get Database Info" onPress={getDatabaseInfo} />
-            <Button title="Drop Table to clear" onPress={dropTable} />
             <Button
-                title="Parse for Categories"
-                onPress={() => parseForAllCategoriesAllTransactions()}
+                title="Drop Table to clear"
+                onPress={() => dropTables(db)}
             />
         </View>
     )

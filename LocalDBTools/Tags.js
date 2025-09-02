@@ -1,7 +1,4 @@
-import { getDB } from './SetUpDB'
-
-export async function addTag(categoryID, transactionID) {
-    const db = await getDB()
+export async function addTag(db, categoryID, transactionID) {
     try {
         await db.runAsync(
             'INSERT INTO tagsTable (CategoryID, TransactionID) VALUES (?, ?)',
@@ -21,8 +18,7 @@ export async function addTag(categoryID, transactionID) {
     }
 }
 
-export async function getTransactionsGivenCategory(categoryID, account) {
-    const db = await getDB()
+export async function getTransactionsGivenCategory(db, categoryID, account) {
     if (categoryID.toString().toLowerCase() === 'uncategorized') {
         const result = await db.getAllAsync(
             `
@@ -53,8 +49,7 @@ export async function getTransactionsGivenCategory(categoryID, account) {
     return result
 }
 
-export async function getCategoryGivenTransaction(transactionID) {
-    const db = await getDB()
+export async function getCategoryGivenTransaction(db, transactionID) {
     const result = await db.getAllAsync(
         `SELECT Category FROM tagsTable WHERE TransactionID = ?`,
         [transactionID]
