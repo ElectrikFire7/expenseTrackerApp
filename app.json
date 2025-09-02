@@ -1,35 +1,39 @@
 {
-  "expo": {
-    "name": "expenseTracker",
-    "slug": "expenseTracker",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "jsEngine": "jsc",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "jsEngine": "jsc"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "jsEngine": "jsc"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-sqlite"
-    ]
-  }
+    "expo": {
+        "name": "expenseTracker",
+        "slug": "expenseTracker",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/rupeesexpensetracker.png",
+        "userInterfaceStyle": "light",
+        "newArchEnabled": true,
+        "jsEngine": "jsc",
+        "splash": {
+            "image": "./assets/rupeesexpensetracker.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff"
+        },
+        "ios": {
+            "supportsTablet": true,
+            "jsEngine": "jsc"
+        },
+        "android": {
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/rupeesexpensetracker.png",
+                "backgroundColor": "#ffffff"
+            },
+            "edgeToEdgeEnabled": true,
+            "jsEngine": "jsc",
+            "package": "com.electrikfire7.expenseTracker"
+        },
+        "web": {
+            "favicon": "./assets/rupeesexpensetracker.png"
+        },
+        "plugins": ["expo-sqlite"],
+        "extra": {
+            "eas": {
+                "projectId": "3e0ac517-6647-4f5d-9ef0-0702e5fbf442"
+            }
+        }
+    }
 }

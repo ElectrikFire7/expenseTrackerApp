@@ -43,7 +43,7 @@ const AddTransaction = ({ navigation }) => {
             const file = result.assets[0]
             setFile(file)
         } catch (err) {
-            console.error('Error reading CSV:', err)
+            console.log('Error reading CSV:', err)
         }
     }
 
@@ -131,12 +131,14 @@ const AddTransaction = ({ navigation }) => {
                             value={transactionString}
                             onChangeText={(text) => setTransactionString(text)}
                             placeholder="* Enter the whole transaction detail uri"
+                            placeholderTextColor="#858585ff"
                         />
                         <TextInput
                             style={styles.input}
                             value={date}
                             onChangeText={(text) => setDate(text)}
                             placeholder="* Enter the date (yyyy-mm-dd)"
+                            placeholderTextColor="#858585ff"
                         />
 
                         <TextInput
@@ -145,6 +147,7 @@ const AddTransaction = ({ navigation }) => {
                             value={amountString}
                             onChangeText={(text) => setAmountString(text)}
                             placeholder="* Enter the amount"
+                            placeholderTextColor="#858585ff"
                         />
 
                         <View

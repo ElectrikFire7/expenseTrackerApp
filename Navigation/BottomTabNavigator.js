@@ -43,7 +43,7 @@ export default function TabNavigator() {
         >
             <Tab.Screen name="Accounts" component={Accounts} />
             <Tab.Screen name="Categories" component={Categories} />
-            <Tab.Screen name="Admin" component={TempHome} />
+            {/* <Tab.Screen name="Admin" component={TempHome} /> */}
             <Tab.Screen name="Add Transaction" component={AddTransaction} />
             <Tab.Screen name="Charts" component={Charts} />
         </Tab.Navigator>

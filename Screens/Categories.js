@@ -99,6 +99,7 @@ const Categories = ({ navigation }) => {
                                 </Text>
                                 <TextInput
                                     placeholder="Category name"
+                                    placeholderTextColor="#858585ff"
                                     value={newCategory}
                                     onChangeText={setNewCategory}
                                     style={styles.modalInput}
@@ -106,6 +107,7 @@ const Categories = ({ navigation }) => {
 
                                 <TextInput
                                     placeholder="Tokens (space separated)"
+                                    placeholderTextColor="#858585ff"
                                     value={newTokens}
                                     onChangeText={setNewTokens}
                                     style={styles.modalInput}

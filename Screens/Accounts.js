@@ -137,6 +137,7 @@ const Accounts = () => {
                         </Text>
                         <TextInput
                             placeholder="Enter New Account Name"
+                            placeholderTextColor="#858585ff"
                             value={newAccount}
                             onChangeText={setNewAccount}
                             style={styles.modalInput}
