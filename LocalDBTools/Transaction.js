@@ -44,6 +44,19 @@ export async function addTransaction(
     }
 }
 
+export async function getTransactionWithID(db, transactionID) {
+    try {
+        const result = await db.getAllAsync(
+            `SELECT * FROM transactionsTable WHERE TransactionID = ?`,
+            [transactionID]
+        )
+        return result[0] || null
+    } catch (error) {
+        console.error('Error fetching transaction:', error)
+        return null
+    }
+}
+
 export async function deleteTransaction(db, transactionID) {
     const result = await db.runAsync(
         `DELETE FROM transactionsTable WHERE TransactionID = ?`,
@@ -58,7 +71,7 @@ export async function deleteTransaction(db, transactionID) {
     } else {
         return {
             success: true,
-            message: `Transaction with ID '${transactionID}' deleted`,
+            message: `Transaction successfully deleted`,
         }
     }
 }

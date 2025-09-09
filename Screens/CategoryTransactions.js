@@ -95,9 +95,16 @@ const CategoryTransactions = ({ route, navigation }) => {
             <FlatList
                 style={styles.transactionList}
                 data={transactions}
-                keyExtractor={(item) => item.TransactionString}
+                keyExtractor={(item) => item.TransactionID.toString()}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.transactionCard}>
+                    <TouchableOpacity
+                        style={styles.transactionCard}
+                        onPress={() =>
+                            navigation.navigate('Transaction Info', {
+                                TransactionID: item.TransactionID,
+                            })
+                        }
+                    >
                         <View style={styles.transactionHeader}>
                             <Text>{item.Date}</Text>
                             <Text>{item.Amount.toFixed(2)}</Text>

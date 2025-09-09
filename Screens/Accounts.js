@@ -26,6 +26,8 @@ const Accounts = () => {
     const [newAccount, setNewAccount] = useState('')
     const [disableCreate, setDisableCreate] = useState(false)
     const [modalVisible, setModalVisible] = useState(false)
+    const [deleteAccount, setDeleteAccount] = useState(null)
+    const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false)
 
     const handleGetAllAccounts = async () => {
         const accountsList = await getAllAccounts(db)
@@ -106,9 +108,10 @@ const Accounts = () => {
                             </TouchableOpacity>
                             <View>
                                 <DeleteButton
-                                    onPressAction={() =>
-                                        handleDeleteAccount(account.Account)
-                                    }
+                                    onPressAction={() => (
+                                        setDeleteAccount(account.Account),
+                                        setConfirmDeleteVisible(true)
+                                    )}
                                 />
                             </View>
                         </View>
@@ -159,6 +162,42 @@ const Accounts = () => {
                                 }}
                             >
                                 <Text>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={confirmDeleteVisible}
+                onRequestClose={() => {
+                    setConfirmDeleteVisible(false)
+                }}
+            >
+                <View style={masterStyles.modalContainer}>
+                    <View style={masterStyles.modalCard}>
+                        <Text style={masterStyles.modalHeader}>
+                            Delete {deleteAccount} Account?
+                        </Text>
+
+                        <View style={masterStyles.modalFooter}>
+                            <TouchableOpacity
+                                style={masterStyles.modalPositiveButton}
+                                onPress={() => setConfirmDeleteVisible(false)}
+                                disabled={disableCreate}
+                            >
+                                <Text>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={masterStyles.modalNegativeButton}
+                                onPress={() => {
+                                    handleDeleteAccount(deleteAccount)
+                                    setConfirmDeleteVisible(false)
+                                }}
+                            >
+                                <Text>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

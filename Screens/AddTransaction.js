@@ -195,6 +195,7 @@ const AddTransaction = ({ navigation }) => {
                             setOpen={setOpenDropdown}
                             setValue={setBank}
                             setItems={setItems}
+                            placeholder="Select a bank"
                         />
                         <TouchableOpacity
                             style={{

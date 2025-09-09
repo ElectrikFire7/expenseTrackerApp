@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import TabNavigator from './Navigation/BottomTabNavigator'
 import CategoryTransactions from './Screens/CategoryTransactions'
 import { SQLiteProvider } from 'expo-sqlite'
+import TransactionInfo from './Screens/TransactionInfo'
 
 const Stack = createNativeStackNavigator()
 
@@ -20,6 +21,10 @@ export default function App() {
                         screenOptions={{ headerShown: false }}
                     >
                         <Stack.Screen name="Main" component={TabNavigator} />
+                        <Stack.Screen
+                            name="Transaction Info"
+                            component={TransactionInfo}
+                        />
                         <Stack.Screen
                             name="CategoryTransactions"
                             component={CategoryTransactions}

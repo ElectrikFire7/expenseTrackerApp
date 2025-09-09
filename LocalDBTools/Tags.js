@@ -50,9 +50,41 @@ export async function getTransactionsGivenCategory(db, categoryID, account) {
 }
 
 export async function getCategoryGivenTransaction(db, transactionID) {
-    const result = await db.getAllAsync(
-        `SELECT Category FROM tagsTable WHERE TransactionID = ?`,
-        [transactionID]
-    )
-    return result
+    try {
+        const result = await db.getAllAsync(
+            `SELECT c.*
+             FROM tagsTable t
+             INNER JOIN categoriesTable c ON t.CategoryID = c.CategoryID
+             WHERE t.TransactionID = ?`,
+            [transactionID]
+        )
+        return result
+    } catch (error) {
+        console.error('Error fetching categories for transaction:', error)
+        return []
+    }
+}
+
+export async function deleteTag(db, transactionID, categoryID) {
+    try {
+        const result = await db.runAsync(
+            `DELETE FROM tagsTable WHERE TransactionID = ? AND CategoryID = ?`,
+            [transactionID, categoryID]
+        )
+
+        if (result.changes === 0) {
+            return {
+                success: false,
+                message: `Tag with TransactionID '${transactionID}' and CategoryID '${categoryID}' not found`,
+            }
+        } else {
+            return {
+                success: true,
+                message: `Tag successfully deleted`,
+            }
+        }
+    } catch (err) {
+        console.error('Error deleting tag:', err, transactionID, categoryID)
+        return { success: false, message: `Error deleting tag: ${err.message}` }
+    }
 }
