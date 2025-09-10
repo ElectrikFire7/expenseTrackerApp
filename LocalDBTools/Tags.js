@@ -65,6 +65,49 @@ export async function getCategoryGivenTransaction(db, transactionID) {
     }
 }
 
+export async function getTransactionsGivenCategoryFiltered(
+    db,
+    categoryID,
+    account,
+    filterText
+) {
+    try {
+        if (categoryID.toString().toLowerCase() === 'uncategorized') {
+            const result = await db.getAllAsync(
+                `
+            SELECT t.*
+            FROM transactionsTable t
+            LEFT JOIN tagsTable tg
+                ON t.TransactionID = tg.TransactionID
+            WHERE t.Account = ?
+              AND tg.CategoryID IS NULL
+            ${filterText ? 'AND t.Date LIKE ?' : ''}
+        ORDER BY t.Date DESC
+        `,
+                [account, `%${filterText}%`]
+            )
+            return result
+        }
+
+        const result = await db.getAllAsync(
+            `
+        SELECT t.*
+        FROM transactionsTable t
+        INNER JOIN tagsTable tg
+            ON t.TransactionID = tg.TransactionID
+        WHERE tg.CategoryID = ?
+        ${filterText ? 'AND t.Date LIKE ?' : ''}
+        ORDER BY t.Date DESC
+        `,
+            [categoryID, `%${filterText}%`]
+        )
+        return result
+    } catch (error) {
+        console.error('Error fetching filtered transactions:', error)
+        return []
+    }
+}
+
 export async function deleteTag(db, transactionID, categoryID) {
     try {
         const result = await db.runAsync(

@@ -8,12 +8,16 @@ import {
     Modal,
 } from 'react-native'
 import { useSQLiteContext } from 'expo-sqlite'
-import { getTransactionsGivenCategory } from '../LocalDBTools/Tags'
+import {
+    getTransactionsGivenCategory,
+    getTransactionsGivenCategoryFiltered,
+} from '../LocalDBTools/Tags'
 import { deleteCategory } from '../LocalDBTools/Category'
 import accountStore from '../Store/accountStore.js'
 import masterStyles from '../Styles/StylesMaster.js'
 import DeleteButton from '../Components/DeleteButton.js'
 import BackButton from '../Components/BackButton.js'
+import CalendarFilter from '../Components/CalendarFilter.js'
 
 const CategoryTransactions = ({ route, navigation }) => {
     if (route?.params?.CategoryID == undefined) {
@@ -38,6 +42,46 @@ const CategoryTransactions = ({ route, navigation }) => {
         )
         setTransactions(allTransactions)
         const dc = allTransactions.reduce(
+            (acc, tx) => {
+                tx?.Debited == 1
+                    ? (acc.debited += tx?.Amount)
+                    : (acc.credited += tx?.Amount)
+                return acc
+            },
+            { credited: 0, debited: 0 }
+        )
+        setCredited(dc.credited.toFixed(2))
+        setDebited(dc.debited.toFixed(2))
+    }
+
+    const handleApplyFilter = async (filterType, year, month) => {
+        let filteredTransactions = []
+        let filter = ''
+        if (filterType === 'All') {
+            fetchTransactions()
+            return
+        }
+        if (filterType === 'Year') {
+            filter = year.toString()
+            filteredTransactions = await getTransactionsGivenCategoryFiltered(
+                db,
+                categoryID,
+                account,
+                filter
+            )
+            console.log('Filtering by year: ', filter)
+        }
+        if (filterType === 'Month') {
+            filter = year.toString() + '-' + month
+            filteredTransactions = await getTransactionsGivenCategoryFiltered(
+                db,
+                categoryID,
+                account,
+                filter
+            )
+        }
+        setTransactions(filteredTransactions)
+        const dc = filteredTransactions.reduce(
             (acc, tx) => {
                 tx?.Debited == 1
                     ? (acc.debited += tx?.Amount)
@@ -82,6 +126,9 @@ const CategoryTransactions = ({ route, navigation }) => {
                     ))}
                 </View>
             )}
+            <View style={{ width: '90%' }}>
+                <CalendarFilter onApply={handleApplyFilter} />
+            </View>
             <View style={styles.amountBar}>
                 <View style={styles.amountBarRow}>
                     <Text style={{ fontWeight: 'bold' }}>CREDITED:</Text>
