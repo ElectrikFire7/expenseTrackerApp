@@ -69,7 +69,6 @@ const CategoryTransactions = ({ route, navigation }) => {
                 account,
                 filter
             )
-            console.log('Filtering by year: ', filter)
         }
         if (filterType === 'Month') {
             filter = year.toString() + '-' + month
